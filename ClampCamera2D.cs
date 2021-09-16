@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace ClampCamera {
     public class ClampCamera2D : MonoBehaviour {
-        private enum FixAxisType { None, fixHorizontal, fixVertical/*, CameraUp*/ } //ログをとれば、限定しなくても補正できるのでは？？boolで済むかも
         [Header("--- GameObject ---")]
         [SerializeField] Camera cam;
         [Tooltip("use this transform when null.")]
@@ -17,14 +16,16 @@ namespace ClampCamera {
         [SerializeField] bool UpdatePlane = false;
         //targetからverticalとhorizontalを取得する
         [Header("--- Plane Setting ---")]
-        [SerializeField] FixAxisType fix = FixAxisType.None;
         [SerializeField] Vector3 horizontal = Vector3.right;
         [SerializeField] Vector3 vertical = Vector3.up;
         public Vector3 Horizontal { get { return (horizontal != Vector3.zero) ? horizontal.normalized : Vector3.right; } }
         public Vector3 Vertical { get { return (vertical != Vector3.zero) ? vertical.normalized : Vector3.up; } }
+        private Vector3 _horizontal, _vertical;
+        [SerializeField] bool axisOrthogonal = true;
+        [SerializeField] bool naturalAxisOnCamera = false; //未実装
         [Tooltip("use center / calculate from this position.")]
-        [SerializeField] bool lockCenter = false;
         [SerializeField] Vector3 center = Vector3.zero;
+        [SerializeField] bool lockCenter = false;
         private Vector3 Center { get { return (lockCenter) ? center : Target.position; } }
         [Header("--- Margin ---")]
         [SerializeField, Range(0, 2)] float rightMargin = 0f;
@@ -61,8 +62,7 @@ namespace ClampCamera {
             }
             public Matrix4x4 GetPlaneMatrix(Vector3 upwards) {
                 Vector3 pos = Vector3.zero;
-                Quaternion rot = Quaternion.LookRotation(Normal, upwards);
-                return Matrix4x4.TRS(pos, rot, Vector3.one);
+                return Matrix4x4.TRS(pos, Quaternion.identity, Vector3.one) * Matrix4x4.LookAt(Vector3.zero, Normal, upwards);
             }
             public bool PlaneIsInversion(Vector3 forwardVector) {
                 Matrix4x4 localToWorld = GetPlaneMatrix(Vector3.up);
@@ -70,6 +70,17 @@ namespace ClampCamera {
                 Vector3 localPos = localToWorld.inverse * pos;
                 return localPos.z < 0f;
             }
+            /*private Matrix4x4 GetMatrix() { ただの平行四辺形
+                Matrix4x4 worldEdge = new Matrix4x4();
+                worldEdge.SetColumn(0, leftDown);
+                worldEdge.SetColumn(1, rightDown);
+                worldEdge.SetColumn(2, leftUp);
+                Matrix4x4 localEdge = new Matrix4x4();
+                localEdge.SetColumn(0, Vector3.zero);
+                localEdge.SetColumn(1, Vector3.right);
+                localEdge.SetColumn(2, Vector3.up);
+                return worldEdge * localEdge.inverse;
+            }*/
             public Vector3 ClampPosOnPlane(Vector3 pos, Vector3 upwards, bool lockLocalZ = true) {
                 Matrix4x4 plane = GetPlaneMatrix(upwards);
                 Vector2 localRightUp = GetLocalPosOnPlane(rightUp);
@@ -126,20 +137,17 @@ namespace ClampCamera {
         }
         private void FixAxisVector() {
             if (cam == null) return;
+            if (!axisOrthogonal) return;
             Matrix4x4 plane = movingAreaPlane.GetPlaneMatrix(cam.transform.up);
-            //Vector3 planeUp = plane * Vector3.up;
-            switch (fix) {
-                case FixAxisType.None:
-                    break;
-                case FixAxisType.fixHorizontal:
-                    horizontal = Vector3.Cross(plane * Vector3.back, vertical); //変化がない時に代入しない
-                    break;
-                case FixAxisType.fixVertical:
-                    vertical = Vector3.Cross(horizontal, plane * Vector3.back);
-                    break;
-                //case FixAxisType.CameraUp:
-                //    break;
+            Vector3 planeBack = plane * Vector3.back;
+            if (_horizontal != horizontal) {
+                vertical = Vector3.Cross(horizontal, planeBack);
             }
+            if (_vertical != vertical) {
+                horizontal = Vector3.Cross(planeBack, vertical);
+            }
+            _vertical = vertical;
+            _horizontal = horizontal;
         }
 
         public Vector3 ClampPosition(Vector3 pos) {
