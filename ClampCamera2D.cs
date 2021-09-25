@@ -1,8 +1,8 @@
-//using System.Collections;
+﻿//using System.Collections;
 //using System.Collections.Generic;
 using UnityEngine;
 
-namespace ClampCamera {
+namespace From3DTo2D.ClampCamera {
     public class ClampCamera2D : MonoBehaviour {
         [Header("--- GameObject ---")]
         [SerializeField] Camera cam;
@@ -39,81 +39,34 @@ namespace ClampCamera {
         [SerializeField] bool drawMoveAxis = false;
 
         private SquarePlane cameraRangePlane = new SquarePlane();
-        private SquarePlane movingAreaPlane = new SquarePlane();
+        [SerializeField] private SquarePlane movingAreaPlane = new SquarePlane();
 
-        [System.Serializable]
-        public struct SquarePlane {
-            [SerializeField] public Vector3 rightUp;
-            [SerializeField] public Vector3 leftUp;
-            [SerializeField] public Vector3 rightDown;
-            [SerializeField] public Vector3 leftDown;
-            public Vector3 Normal { get { return Vector3.Cross(rightDown - leftDown, rightUp - rightDown); } }
-            public SquarePlane(Vector3 rightUp, Vector3 leftUp, Vector3 rightDown, Vector3 leftDown) {
-                this.rightUp = rightUp;
-                this.leftUp = leftUp;
-                this.rightDown = rightDown;
-                this.leftDown = leftDown;
-            }
-            public void Set(Vector3 rightUp, Vector3 leftUp, Vector3 rightDown, Vector3 leftDown) {
-                this.rightUp = rightUp;
-                this.leftUp = leftUp;
-                this.rightDown = rightDown;
-                this.leftDown = leftDown;
-            }
-            public Matrix4x4 GetPlaneMatrix(Vector3 upwards) {
-                Vector3 pos = Vector3.zero;
-                return Matrix4x4.TRS(pos, Quaternion.identity, Vector3.one) * Matrix4x4.LookAt(Vector3.zero, Normal, upwards);
-            }
-            public bool PlaneIsInversion(Vector3 forwardVector) {
-                Matrix4x4 localToWorld = GetPlaneMatrix(Vector3.up);
-                Vector3 pos = (Vector3)(localToWorld * Vector3.zero) + forwardVector;
-                Vector3 localPos = localToWorld.inverse * pos;
-                return localPos.z < 0f;
-            }
-            /*private Matrix4x4 GetMatrix() { ただの平行四辺形
-                Matrix4x4 worldEdge = new Matrix4x4();
-                worldEdge.SetColumn(0, leftDown);
-                worldEdge.SetColumn(1, rightDown);
-                worldEdge.SetColumn(2, leftUp);
-                Matrix4x4 localEdge = new Matrix4x4();
-                localEdge.SetColumn(0, Vector3.zero);
-                localEdge.SetColumn(1, Vector3.right);
-                localEdge.SetColumn(2, Vector3.up);
-                return worldEdge * localEdge.inverse;
-            }*/
-            public Vector3 ClampPosOnPlane(Vector3 pos, Vector3 upwards, bool lockLocalZ = true) {
-                Matrix4x4 plane = GetPlaneMatrix(upwards);
-                Vector2 localRightUp = GetLocalPosOnPlane(rightUp);
-                Vector2 localLeftUp = GetLocalPosOnPlane(leftUp);
-                Vector2 localRightDown = GetLocalPosOnPlane(rightDown);
-                Vector2 localLeftDown = GetLocalPosOnPlane(leftDown);
-                Vector3 localPos = GetLocalPosOnPlane(pos);
-                Vector2 localPos2 = localPos;
-                float yMax = Mathf.Lerp(localLeftUp.y, localRightUp.y, (localPos2 - localLeftUp).x / (localRightUp - localLeftUp).x); //省略できそう
-                float yMin = Mathf.Lerp(localLeftDown.y, localRightDown.y, (localPos2 - localLeftDown).x / (localRightDown - localLeftDown).x);
-                float xMax = Mathf.Lerp(localRightDown.x, localRightUp.x, (localPos2 - localRightDown).y / (localRightUp - localRightDown).y);
-                float xMin = Mathf.Lerp(localLeftDown.x, localLeftUp.x, (localPos2 - localLeftDown).y / (localLeftUp - localLeftDown).y);
-                if (xMax >= xMin) localPos.x = Mathf.Clamp(localPos.x, xMin, xMax);
-                else localPos.x = Mathf.Clamp(localPos.x, xMax, xMin);
-                localPos.y = Mathf.Clamp(localPos.y, yMin, yMax);
-                if (lockLocalZ) localPos.z = 0f;
-                return GetPlaneMatrix(upwards).MultiplyPoint3x4(localPos);
-                Vector3 GetLocalPosOnPlane(Vector3 _pos) {
-                    return plane.inverse.MultiplyPoint(_pos);
-                }
-            }
-            public void DrawPlane() {
-                Gizmos.DrawLine(rightUp, leftUp);
-                Gizmos.DrawLine(leftUp, leftDown);
-                Gizmos.DrawLine(leftDown, rightDown);
-                Gizmos.DrawLine(rightDown, rightUp);
-            }
+        public Vector3 LocalHorizontal(Vector3 pos, bool local = false) { //面の歪みを考慮したもの
+            Vector3 localPos = local ? pos : movingAreaPlane.GetInverseHomographyPosition(pos);
+            //Vector3 localRight = localPos + Horizontal;
+            Vector3 localRight = localPos + Vector3.right;
+            Vector3 center = movingAreaPlane.GetHomographyPosition(localPos);
+            Vector3 right = movingAreaPlane.GetHomographyPosition(localRight);
+            return (right - center).normalized;
         }
-        
+        public Vector3 LocalVertical(Vector3 pos, bool local = false) { //面の歪みを考慮したもの
+            Vector3 localPos = local ? pos : movingAreaPlane.GetInverseHomographyPosition(pos);
+            //Vector3 localUp = localPos + Vertical;
+            Vector3 localUp = localPos + Vector3.up;
+            Vector3 center = movingAreaPlane.GetHomographyPosition(localPos);
+            Vector3 up = movingAreaPlane.GetHomographyPosition(localUp);
+            return (up - center).normalized;
+        }
+        public Vector3 LocalPosition(Vector3 pos) {
+            return movingAreaPlane.GetHomographyPosition(pos);
+        }
+
         // Start is called before the first frame update
         void Start() {
             FixAxisLength();
             UpdateEdgePoint();
+            //movingAreaPlane.UpdatePlane();
+            //Debug.Log(movingAreaPlane.GetInverseHomographyPosition(Vector3.zero));
         }
 
         // Update is called once per frame
@@ -138,7 +91,7 @@ namespace ClampCamera {
         private void FixAxisVector() {
             if (cam == null) return;
             if (!axisOrthogonal) return;
-            Matrix4x4 plane = movingAreaPlane.GetPlaneMatrix(cam.transform.up);
+            Matrix4x4 plane = movingAreaPlane.GetPlaneMatrix();
             Vector3 planeBack = plane * Vector3.back;
             if (_horizontal != horizontal) {
                 vertical = Vector3.Cross(horizontal, planeBack);
@@ -151,7 +104,7 @@ namespace ClampCamera {
         }
 
         public Vector3 ClampPosition(Vector3 pos) {
-            return movingAreaPlane.ClampPosOnPlane(pos, cam.transform.up, lockCenter);
+            return movingAreaPlane.ClampPosOnPlane(pos, lockCenter);
         }
 
         public void ClampPosition(ref Vector3 pos) {
@@ -177,13 +130,16 @@ namespace ClampCamera {
                 GetPointInArea(Vector2.right + Vector2.down + new Vector2(-rightMargin, downMargin)),
                 GetPointInArea(Vector2.left + Vector2.down + new Vector2(leftMargin, downMargin))
                 );
-            Vector3 GetPointInArea(Vector2 normalizedPos) {
+            Vector3 GetPointInArea(Vector2 normalizedPos) { //こいつが悪い気がする。
                 Vector3 vectorFromCam = GetVectorFromCam(normalizedPos);
                 return GetIntersectionOfPlaneAndLine(Center, Vector3.Cross(Horizontal, Vertical), camPos, vectorFromCam);
             }
             Vector3 GetVectorFromCam(Vector2 pos) {
                 return camRot * new Vector3(pos.x * frustumWidth / 2, pos.y * frustumHeight / 2, distance);
             }
+
+            
+            
         }
 
         private static Vector3 GetIntersectionOfPlaneAndLine(Vector3 planeCenter, Vector3 planeNormalVector, Vector3 lineCenter, Vector3 lineVector) {
@@ -201,7 +157,7 @@ namespace ClampCamera {
             else Gizmos.color = Color.red;
             if (drawCameraRange) cameraRangePlane.DrawPlane();
             movingAreaPlane.DrawPlane();
-            Matrix4x4 plane = movingAreaPlane.GetPlaneMatrix(cam.transform.up);
+            Matrix4x4 plane = movingAreaPlane.GetPlaneMatrix(Vector3.up);
             float size = drawAxisSize;
             if (drawPlaneAxis) {
                 DrawAxisOnPlane(Vector3.right, Color.red);
@@ -218,6 +174,14 @@ namespace ClampCamera {
                 Gizmos.DrawLine(plane.MultiplyPoint3x4(Vector3.zero) + Center, pos + Center);
             }
             bool PlaneIsInversion() => movingAreaPlane.PlaneIsInversion(cam.transform.forward);
+
+            //Gizmos.DrawWireSphere(movingAreaPlane.GetHomographyPosition(new Vector3(px, py, pz)), 0.5f);
         }
+
+        /*[SerializeField, Range(0, 1)] float px;
+        [SerializeField, Range(0, 1)] float py;
+        [SerializeField, Range(0, 1)] float pz;*/
+        //[SerializeField] Vector2 p1;
+        //[SerializeField] float s;
     }
 }
