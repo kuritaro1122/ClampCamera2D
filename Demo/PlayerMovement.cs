@@ -5,24 +5,22 @@ using From3DTo2D.ClampCamera;
 
 public class PlayerMovement : MonoBehaviour {
     [Header("--- GameObject ---")]
-    [SerializeField] Rigidbody rb;
     [SerializeField] ClampCamera2D cc2d;
     [Header("--- Movement ---")]
-    [SerializeField] float speed = 20f;
+    [SerializeField] float speed = 10f;
 
-    // Update is called once per frame
     void Update() {
-        Vector2 stick;
-        if (Time.timeScale > 0f) Movement(stick);
+        Movement();
     }
 
-    private void Movement(Vector2 stick) {
-        Vector3 pos = rb.position;
+    private void Movement() {
+        Vector2 stick;
+        stick.x = Input.GetAxis("Horizontal");
+        stick.y = Input.GetAxis("Vertical");
+        Vector3 pos = this.transform.position;
         Vector3 velocity = speed * (cc2d.LocalHorizontal(pos) * stick.x + cc2d.LocalVertical(pos) * stick.y);
-        Vector3 localPos_ = cc2d.InverseTransformPosition(pos + velocity * Time.deltaTime);
-        localPos_.x = Mathf.Clamp01(localPos_.x);
-        localPos_.y = Mathf.Clamp01(localPos_.y);
-        Vector3 pos_ = cc2d.TransformPosition(localPos_);
-        rb.velocity = (pos_ - pos) / Time.deltaTime;
+        pos += velocity * Time.deltaTime;
+        pos = cc2d.ClampPosition(pos);
+        this.transform.position = pos;
     }
 }
