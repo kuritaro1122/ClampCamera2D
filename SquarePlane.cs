@@ -127,6 +127,10 @@ namespace From3DTo2D {
             }
         }
 
+        /*public Vector3 ClampLocalPosOnPlane(Vector3 pos, bool lockLocalZ = true) {
+            return pos;
+        }*/
+
         public void DrawPlane() {
             Gizmos.DrawLine(rightUp, leftUp);
             Gizmos.DrawLine(leftUp, leftDown);
