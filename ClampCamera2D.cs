@@ -1,4 +1,4 @@
-﻿//using System.Collections;
+//using System.Collections;
 //using System.Collections.Generic;
 using UnityEngine;
 
@@ -43,7 +43,6 @@ namespace From3DTo2D.ClampCamera {
 
         public Vector3 LocalHorizontal(Vector3 pos, bool local = false) { //面の歪みを考慮したもの
             Vector3 localPos = local ? pos : movingAreaPlane.GetInverseHomographyPosition(pos);
-            //Vector3 localRight = localPos + Horizontal;
             Vector3 localRight = localPos + Vector3.right;
             Vector3 center = movingAreaPlane.GetHomographyPosition(localPos);
             Vector3 right = movingAreaPlane.GetHomographyPosition(localRight);
@@ -51,14 +50,16 @@ namespace From3DTo2D.ClampCamera {
         }
         public Vector3 LocalVertical(Vector3 pos, bool local = false) { //面の歪みを考慮したもの
             Vector3 localPos = local ? pos : movingAreaPlane.GetInverseHomographyPosition(pos);
-            //Vector3 localUp = localPos + Vertical;
             Vector3 localUp = localPos + Vector3.up;
             Vector3 center = movingAreaPlane.GetHomographyPosition(localPos);
             Vector3 up = movingAreaPlane.GetHomographyPosition(localUp);
             return (up - center).normalized;
         }
-        public Vector3 LocalPosition(Vector3 pos) {
-            return movingAreaPlane.GetHomographyPosition(pos);
+        public Vector3 InverseTransformPosition(Vector3 pos) {
+            return movingAreaPlane.GetInverseHomographyPosition(pos);
+        }
+        public Vector3 TransformPosition(Vector3 localPos) {
+            return movingAreaPlane.GetHomographyPosition(localPos);
         }
 
         // Start is called before the first frame update
@@ -137,9 +138,6 @@ namespace From3DTo2D.ClampCamera {
             Vector3 GetVectorFromCam(Vector2 pos) {
                 return camRot * new Vector3(pos.x * frustumWidth / 2, pos.y * frustumHeight / 2, distance);
             }
-
-            
-            
         }
 
         private static Vector3 GetIntersectionOfPlaneAndLine(Vector3 planeCenter, Vector3 planeNormalVector, Vector3 lineCenter, Vector3 lineVector) {
@@ -152,6 +150,7 @@ namespace From3DTo2D.ClampCamera {
         }
 
         void OnDrawGizmos() {
+            if (cam == null) return;
             UpdateEdgePoint();
             if (!PlaneIsInversion()) Gizmos.color = Color.green;
             else Gizmos.color = Color.red;
