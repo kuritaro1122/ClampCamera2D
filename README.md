@@ -13,8 +13,8 @@
 * Vector3 Vertical
 
 **Public 関数**
-* Vector3 LocalHorizontal(Vector3 pos, bool local)
-* Vector3 LocalVertical(Vector3 pos, bool local)
-* Vector3 TransformPosition(Vector3 localPos)
-* Vector3 InverseTransformPosition(Vector3 pos)
-* void UpdateEdgePoint()
+* Vector3 LocalHorizontal (Vector3 pos, bool local)
+* Vector3 LocalVertical (Vector3 pos, bool local)
+* Vector3 TransformPosition (Vector3 localPos)
+* Vector3 InverseTransformPosition (Vector3 pos)
+* void UpdateEdgePoint ()
