@@ -17,7 +17,6 @@
 * void UpdateEdgePoint ()
 
 **Inspector 変数**
-![inspector](https://user-images.githubusercontent.com/62167170/135424470-73991220-c987-4880-8ab4-7560d2b2d906.png)
 * [GameObject]
   - Camera cam
   - Transform target
@@ -40,3 +39,5 @@
   - bool drawPlaneAxis
   - float drawAxisSize
 
+
+![inspector](https://user-images.githubusercontent.com/62167170/135424470-73991220-c987-4880-8ab4-7560d2b2d906.png)
