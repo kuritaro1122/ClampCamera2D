@@ -1,3 +1,8 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using From3DTo2D.ClampCamera;
+
 public class PlayerMovement_RigidBody : MonoBehaviour {
     [Header("--- GameObject ---")]
     [SerializeField] ClampCamera2D cc2d;
