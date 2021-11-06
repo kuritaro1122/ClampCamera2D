@@ -9,11 +9,6 @@ namespace From3DTo2D.ClampCamera {
         [Tooltip("use this transform when null.")]
         [SerializeField] Transform target = null;
         private Transform Target { get { return (target != null) ? target : this.transform; } }
-        [Header("--- Option ---")]
-        [Tooltip("call ClampPosition() manually when false.")]
-        //[SerializeField] bool fixOnStart = true;
-        [SerializeField] bool clampOnUpdate = true;
-        [SerializeField] bool UpdatePlane = false;
         //targetからverticalとhorizontalを取得する
         [Header("--- Plane Setting ---")]
         [SerializeField] Vector3 horizontal = Vector3.right;
@@ -22,16 +17,21 @@ namespace From3DTo2D.ClampCamera {
         public Vector3 Vertical { get { return (vertical != Vector3.zero) ? vertical.normalized : Vector3.up; } }
         private Vector3 _horizontal, _vertical;
         [SerializeField] bool axisOrthogonal = true;
-        [SerializeField] bool naturalAxisOnCamera = false; //未実装
+        //[SerializeField] bool naturalAxisOnCamera = false; //未実装
         [Tooltip("use center / calculate from this position.")]
         [SerializeField] Vector3 center = Vector3.zero;
         [SerializeField] bool lockCenter = false;
-        private Vector3 Center { get { return (lockCenter) ? center : Target.position; } }
+        private Vector3 Center { get { return (lockCenter) ? center : center = Target.position; } }
         [Header("--- Margin ---")]
         [SerializeField, Range(0, 2)] float rightMargin = 0f;
         [SerializeField, Range(0, 2)] float leftMargin = 0f;
         [SerializeField, Range(0, 2)] float upMargin = 0f;
         [SerializeField, Range(0, 2)] float downMargin = 0f;
+        [Header("--- Option ---")]
+        [Tooltip("call ClampPosition() manually when false.")]
+        //[SerializeField] bool fixOnStart = true;
+        [SerializeField] bool clampOnUpdate = true;
+        [SerializeField] bool updatePlane = false;
         [Header("--- Gizmos ---")]
         [SerializeField] bool drawCameraRange = false;
         [SerializeField] bool drawPlaneAxis = false; //サイズ調整
@@ -75,7 +75,7 @@ namespace From3DTo2D.ClampCamera {
             if (clampOnUpdate) {
                 Target.position = ClampPosition(Target.position);
             }
-            if (UpdatePlane) UpdateEdgePoint();
+            if (updatePlane) UpdateEdgePoint();
         }
 
         void OnValidate() {
@@ -104,13 +104,16 @@ namespace From3DTo2D.ClampCamera {
             _horizontal = horizontal;
         }
 
-        public Vector3 ClampPosition(Vector3 pos) {
-            return movingAreaPlane.ClampPosOnPlane(pos, lockCenter);
+        public Vector3 ClampPosition(Vector3 pos, bool lockLocalZ = true) { //遠近法の適用
+            return movingAreaPlane.ClampPosOnPlane(pos, /*lockCenter*/lockLocalZ);
         }
-
-        public void ClampPosition(ref Vector3 pos) {
+        /*public void ClampPosition(ref Vector3 pos) {
             pos = ClampPosition(pos);
-        }
+        }*/
+
+        /*public Vector3 ClampLocalMovement(Vector3 pos, Vector3 velocity, float deltaTime) {
+            return pos;
+        }*/
 
         public void UpdateEdgePoint() {
             if (cam == null) return;
@@ -179,7 +182,7 @@ namespace From3DTo2D.ClampCamera {
 
         /*[SerializeField, Range(0, 1)] float px;
         [SerializeField, Range(0, 1)] float py;
-        [SerializeField, Range(0, 1)] float pz;*/
+        [SerializeField] float pz;*/
         //[SerializeField] Vector2 p1;
         //[SerializeField] float s;
     }
