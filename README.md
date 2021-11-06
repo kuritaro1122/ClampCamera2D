@@ -14,6 +14,7 @@
 * Vector3 LocalVertical (Vector3 pos, bool local)
 * Vector3 TransformPosition (Vector3 localPos)
 * Vector3 InverseTransformPosition (Vector3 pos)
+* Vector3 ClampPosition (Vector3 pos, bool lockLocalZ = true)
 * void UpdateEdgePoint ()
 
 **Inspector 変数**
