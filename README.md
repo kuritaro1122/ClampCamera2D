@@ -46,7 +46,16 @@
 # Example
 
 ```
-void Movement() {
-}
+using From3DTo2D.ClampCamera;
 
+public class Sample : MonoBehaviour {
+  public ClampCamera2D cc2d;
+  public float speed = 10f;
+
+  void Movement(Transform _transform, Vector2 stick) {
+    Vector3 pos = _transform.position;
+    pos += speed * (cc2d.LocalHorizontal(pos) * stick.x + cc2d.LocalVertical(pos) * stick.y) * Time.deltaTime;
+    pos = cc2d.ClampPosition(position, false);
+  }
+}
 ```
