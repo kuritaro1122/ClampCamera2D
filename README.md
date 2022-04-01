@@ -12,7 +12,7 @@
 **Public 関数**
 * Vector3 LocalHorizontal (Vector3 pos, bool local)
 * Vector3 LocalVertical (Vector3 pos, bool local)
-* Vector3 TransformPosition (Vector3 localPos)
+* Vector3 TransformPosition (Vector3 localPos) // localPos => 0 ~ 1
 * Vector3 InverseTransformPosition (Vector3 pos)
 * Vector3 ClampPosition (Vector3 pos, bool lockLocalZ = true)
 * void UpdateEdgePoint ()
